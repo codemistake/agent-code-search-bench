@@ -1,0 +1,58 @@
+[
+  {
+    "id": "L1",
+    "kind": "lexical",
+    "q": "По какому URL ходит клиент за токеном? Назови точный URL и файл, где он задан.",
+    "must_text": ["auth.example.internal"],
+    "must_files": ["src/auth.js"]
+  },
+  {
+    "id": "L2",
+    "kind": "lexical",
+    "q": "Какая версия зависимости зафиксирована в коде, а не в package.json? Назови строку версии и файл.",
+    "must_text": ["1.4.0-beta.7"],
+    "must_files": ["src/runtime.js"]
+  },
+  {
+    "id": "S1",
+    "kind": "structural",
+    "q": "В каком файле определена функция writeAtomic и какие файлы её импортируют? Перечисли всех импортёров.",
+    "must_text": [],
+    "must_files": ["src/fs-utils.js", "src/config.js", "src/cache.js", "src/session.js"]
+  },
+  {
+    "id": "S2",
+    "kind": "structural",
+    "q": "Что сломается, если поменять сигнатуру функции resolveToken? Перечисли все файлы, которые её вызывают.",
+    "must_text": [],
+    "must_files": ["src/auth.js", "src/client.js", "src/retry.js", "bin/cli.js"]
+  },
+  {
+    "id": "M1",
+    "kind": "semantic",
+    "q": "Где в коде решается, надо ли отправлять запрос через прокси, а не напрямую? Назови файл и функцию.",
+    "must_text": ["shouldProxy"],
+    "must_files": ["src/net/whitelist.js"]
+  },
+  {
+    "id": "M2",
+    "kind": "semantic",
+    "q": "Где логика, которая решает, на какую модель понизиться при отказе провайдера? Назови файл.",
+    "must_text": [],
+    "must_files": ["src/fallback.js"]
+  },
+  {
+    "id": "H1",
+    "kind": "hard",
+    "q": "Какие функции самого проекта вызываются внутри тела функции probeEndpoint? Перечисли имена.",
+    "must_text": ["parseFailure", "requestDirect", "requestViaSocks"],
+    "must_files": ["src/probe.js"]
+  },
+  {
+    "id": "H2",
+    "kind": "hard",
+    "q": "Где код, который не даёт оборванной записи испортить файл настроек, то есть пишет во временный файл и потом подменяет им целевой? Назови файл и функцию.",
+    "must_text": ["writeAtomic"],
+    "must_files": ["src/fs-utils.js"]
+  }
+]

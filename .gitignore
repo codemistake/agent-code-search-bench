@@ -1,0 +1,10 @@
+results.jsonl
+results*.jsonl
+report.md
+questions.json
+corpus/
+arena/
+cfg/
+shims/
+node_modules/
+*.log
