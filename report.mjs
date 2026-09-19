@@ -4,6 +4,7 @@
  * отчёт приходится чаще, чем гонять модель.
  *
  *   node report.mjs > report.md
+ *   node report.mjs results.qwen.jsonl > report.qwen.md
  */
 
 import fs from 'node:fs'
@@ -11,7 +12,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const rows = fs.readFileSync(path.join(HERE, 'results.jsonl'), 'utf8')
+const rows = fs.readFileSync(path.join(HERE, process.argv[2] || process.env.BENCH_RESULTS || 'results.jsonl'), 'utf8')
   .trim().split('\n').filter(Boolean).map((l) => JSON.parse(l))
 
 const by = (list, key) => list.reduce((acc, r) => ((acc[r[key]] ||= []).push(r), acc), {})
@@ -30,7 +31,7 @@ const ok = rows.filter((r) => !r.error)
 const failed = rows.filter((r) => r.error)
 
 console.log('# Бенчмарк инструментов навигации по коду\n')
-console.log(`Модель: \`${process.env.BENCH_MODEL || 'glm-5.3-flash'}\`. Корпус: \`${process.env.BENCH_CORPUS_NAME || 'см. настройку прогона'}\`.`)
+console.log(`Модель: \`${rows[0]?.model || process.env.BENCH_MODEL || 'glm-5.3-flash'}\`. Корпус: \`${process.env.BENCH_CORPUS_NAME || 'см. настройку прогона'}\`.`)
 console.log(`Прогонов: ${rows.length}, из них сорвалось ${failed.length}.\n`)
 
 console.log('## Итог по плечам\n')

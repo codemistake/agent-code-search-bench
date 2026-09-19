@@ -34,6 +34,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
  */
 const CORPUS = process.env.BENCH_CORPUS || path.join(HERE, '..', 'arena', 'repo')
 const MODEL = process.env.BENCH_MODEL || 'glm-5.3-flash'
+/** Сырьё прогона; для второй модели — другой файл, чтобы треки не смешивались. */
+const RESULTS = process.env.BENCH_RESULTS || 'results.jsonl'
 
 /**
  * Каталог самого харнесса — корпус, а не `bench/`.
@@ -226,7 +228,8 @@ async function ask(q, cfgFile) {
   }
   if (!sessionID) return { error: 'нет sessionID', wallMs: r.ms, stderr: r.stderr.slice(-400) }
 
-  const ex = await run('opencode2', ['export', '--standalone', sessionID], { timeoutMs: 120_000, env: { OPENCODE_CONFIG: cfgFile } })
+  // В v2.0.2 `export` переехал в `session export`; в beta-19086 был верхнеуровневым.
+  const ex = await run('opencode2', ['session', 'export', '--standalone', sessionID], { timeoutMs: 120_000, env: { OPENCODE_CONFIG: cfgFile } })
   let session
   try { session = JSON.parse(ex.stdout) } catch { return { error: 'export не разобрался', sessionID, wallMs: r.ms } }
 
@@ -298,7 +301,7 @@ async function main() {
   let arms = ARMS.filter((a) => !a.gated || WITH_CBM)
   if (ONLY.length) arms = arms.filter((a) => ONLY.includes(a.id))
 
-  const outFile = path.join(HERE, 'results.jsonl')
+  const outFile = path.join(HERE, RESULTS)
   const stream = fs.createWriteStream(outFile, { flags: 'a' })
   console.log(`модель: ${MODEL} | корпус: ${CORPUS}`)
   console.log(`плечи: ${arms.map((a) => a.id).join(', ')} | вопросов: ${questions.length} | повторов: ${REPEATS}\n`)
@@ -334,7 +337,7 @@ async function main() {
         const res = await ask(q, cfgFile)
         const sc = res.error ? null : score(q, res.answer)
         const row = {
-          arm: a.id, rep, qid: q.id, kind: q.kind,
+          model: MODEL, arm: a.id, rep, qid: q.id, kind: q.kind,
           setupMs, indexBytes, setupOk,
           ...res, ...(sc || {}),
           answer: undefined, // сырой ответ отдельно, чтобы строка jsonl не распухала
