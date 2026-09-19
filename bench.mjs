@@ -13,6 +13,8 @@
  *   node bench.mjs
  * Отдельные плечи и повторы:
  *   node bench.mjs --arms baseline,semble --repeats 3
+ * Только вопросы одного типа:
+ *   node bench.mjs --kinds inventory --repeats 2
  *
  * Результат: results.jsonl (сырьё), report.md (сводка).
  */
@@ -88,6 +90,8 @@ const flag = (name, def) => {
 const REPEATS = Number(flag('repeats', 1))
 const ONLY = (flag('arms', '') || '').split(',').filter(Boolean)
 const WITH_CBM = argv.includes('--with-cbm')
+/** Только вопросы этих типов: `--kinds inventory` — догнать новый тип, не перегоняя всё. */
+const KINDS = (flag('kinds', '') || '').split(',').filter(Boolean)
 
 /** Запустить процесс, вернуть {code, stdout, stderr, ms}. Без исключений. */
 function run(cmd, args, opts = {}) {
@@ -286,18 +290,27 @@ const norm = (s) => s.replace(/\\/g, '/').toLowerCase()
 function score(q, answer) {
   const a = norm(answer || '')
   const found = q.must_files.filter((f) => a.includes(norm(f)))
-  const textOk = q.must_text.every((t) => a.toLowerCase().includes(t.toLowerCase()))
+  const foundText = q.must_text.filter((t) => a.includes(t.toLowerCase()))
+  const textOk = foundText.length === q.must_text.length
+  const fileRecall = q.must_files.length ? found.length / q.must_files.length : 1
+  // У `inventory` («перечисли все X») ответ — чеклист, и попадание в файл там
+  // тривиально: он один и назван в вопросе. Поэтому recall у этого типа — доля
+  // названных элементов чеклиста, а не файлов.
+  const textRecall = q.must_text.length ? foundText.length / q.must_text.length : 1
   return {
-    recall: q.must_files.length ? found.length / q.must_files.length : 1,
+    recall: q.kind === 'inventory' ? textRecall : fileRecall,
     exact: found.length === q.must_files.length && textOk ? 1 : 0,
     textHit: textOk ? 1 : 0,
+    textRecall,
     foundFiles: found,
     missedFiles: q.must_files.filter((f) => !a.includes(norm(f))),
+    missedText: q.must_text.filter((t) => !a.includes(t.toLowerCase())),
   }
 }
 
 async function main() {
   const questions = JSON.parse(fs.readFileSync(path.join(HERE, 'questions.json'), 'utf8'))
+    .filter((q) => !KINDS.length || KINDS.includes(q.kind))
   let arms = ARMS.filter((a) => !a.gated || WITH_CBM)
   if (ONLY.length) arms = arms.filter((a) => ONLY.includes(a.id))
 
